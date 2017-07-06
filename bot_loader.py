@@ -8,4 +8,6 @@ reddit = praw.Reddit('bot1')
 
 ripcity = reddit.subreddit("ripcity")
 
-find_reply.find_and_reply(ripcity)
+nba = reddit.subreddit("nba")
+
+find_reply.find_and_reply(nba)

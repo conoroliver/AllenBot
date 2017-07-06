@@ -6,27 +6,41 @@ import pdb
 import re
 import os
 
-replies_checked = False
 
-
-def check_replies():
-    if not os.path.isfile("comments_replied_to.txt"):
-        posts_replied_to = []
+def find_and_reply(subreddit):
+    """
+    Takes praw object subreddit
+    """
+    if not os.path.isfile("comments_replied_to_" +str(subreddit)+".txt"):
+        comments_replied_to = []
     else:
-        with open("comments_replied_to.txt", "r") as f:
+        with open("comments_replied_to_" +str(subreddit)+".txt", "rw") as f:
             comments_replied_to = f.read()
             comments_replied_to = comments_replied_to.split("\n")
             comments_replied_to = list(filter(None, comments_replied_to))
-    replies_checked = True;
+
+    initial_length = len(comments_replied_to)
+    # GO THROUGH COMMENTS
+    new_comments = []
+    comment_count = 0
+    for comment in subreddit.comments(limit = 2000):
+        comment_count += 1
+        if comment not in comments_replied_to and should_reply(comment, subreddit):
+            comments_replied_to.append(comment)
+            new_comments.append(comment)
+
+    print len(comments_replied_to)
+    with open("comments_replied_to_" + str(subreddit) + ".txt", "w+") as f:
+        for comment in new_comments:
+            f.write(str(comment) + "\n")
+
+    with open("comments_replied_to_" + str(subreddit) + "_text.txt", "w+") as f2:
+        f2.write(str(comment_count) + " comments evaluated\n")
+        print comment_count
+        for comment in new_comments:
+            f2.write(comment.body.encode('utf-8') + "\n" + "######################\n")
 
 
-def find_and_reply(subreddit):
-    if not replies_checked:
-        check_replies()
-    for comment in subreddit.comments(limit=1):
-        if should_reply(comment):
-            # reply
-            print "true"
 
 
 def should_reply(comment, subreddit):
@@ -34,11 +48,26 @@ def should_reply(comment, subreddit):
     Takes a comment and determines whether or not it should be replied to.
     This function parses comments, looking for certain keywords that would warrant a reply
     """
-    cmt_text = str(comment.body)
-    print cmt_text
+    cmt_text = comment.body.encode('utf-8').strip()
     eval_score = 0
+
+    num_test_words = float(12)
+
+    found_list = re.findall(r"luxury tax|salary dump|bad contract", cmt_text, re.IGNORECASE)
+    found_list = list(set(found_list))
+    for match in found_list:
+        eval_score += 3
+
+    if subreddit == "nba":
+        if not re.findall(r"blazer", cmt_text, re.IGNORECASE):
+            return False
+
+
     for word in cmt_text.split():
-        print word
-    if eval_score > 4:
+        if re.search(r"crabbe|turner|over|dump|trade|too|cap|salary", word, re.IGNORECASE):
+            eval_score += 1
+
+    if eval_score >= 6:
         return True
+
     return False
