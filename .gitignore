@@ -103,3 +103,6 @@ ENV/
 # .idea for pycharm
 .idea
 .idea/
+
+# ignroing text files used to record data
+comments*
